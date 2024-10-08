@@ -1,0 +1,232 @@
+let ball;
+let leftPaddle;
+let rightPaddle;
+
+function setup() {
+  createCanvas(1900,1000);
+  ball = new Ball();
+  leftPaddle = new Paddle(true);
+  rightPaddle = new Paddle(false);
+}
+
+function draw() {
+  background(0, 20);
+  
+  stroke(255);
+  line(width / 2, 0, width / 2, height);
+
+  // Draw a circle with text inside and rotate the text
+  stroke(255);
+  fill(0);
+  ellipse(width / 2, height / 2, 200); // Draw a white circle
+  
+  
+  if (leftPaddle.score >= 10 || rightPaddle.score >= 10) {
+    let winner = leftPaddle.score >= 10 ? "LEFT" : "RIGHT";
+    displayWinner(winner); // Display the winning text
+    noLoop(); // Stop drawing the game
+    setTimeout(resetGame, 3000); // Reset the game after 3 seconds
+    return; // Exit the current draw() call
+  }
+  
+  
+  // Rotation transformation starts here
+  push(); // Save the current drawing style settings and transformations
+  translate(width / 2, height / 2); // Move the origin to the center for rotation
+  rotate(frameCount / 100.0); // Rotate by a function of the frame count
+  fill(255);
+  textSize(64);
+  textAlign(CENTER, CENTER);
+  textFont("Helvetica");
+  text('Jv*', 0, 5); // Draw "ML*" centered in the circle; it rotates because of the transformation
+  pop(); // Restore the settings and transformations
+
+
+  
+  
+  ball.update();
+  ball.display();
+  ball.checkPaddleRight(rightPaddle);
+  ball.checkPaddleLeft(leftPaddle);
+
+  leftPaddle.display();https://github.com/joaosantos200/estudantejoao/tree/main
+  rightPaddle.display();
+  leftPaddle.update();
+  rightPaddle.update();
+
+  fill(255);
+  textSize(32);
+  text(leftPaddle.score, 32, 40);
+  text(rightPaddle.score, width - 64, 40);
+
+  handleKeys();
+}
+
+function handleKeys() {
+  if (keyIsDown(87)) {
+    // 'W' key
+    leftPaddle.move(-1);
+  } else if (keyIsDown(83)) {
+    // 'S' key
+    leftPaddle.move(1);
+  } else {
+    leftPaddle.move(0); // Stop the left paddle when no key is pressed
+  }
+
+  if (keyIsDown(UP_ARROW)) {
+    rightPaddle.move(-1);
+  } else if (keyIsDown(DOWN_ARROW)) {
+    rightPaddle.move(1);
+  } else {
+    rightPaddle.move(0); // Stop the right paddle when no key is pressed
+  }
+}
+
+
+function displayWinner(winner) {
+  textSize(64);
+  textAlign(CENTER, CENTER);
+  fill(255);
+  noStroke();
+  text(`${winner} PLAYER WON!`, width / 2, height / 2);
+}
+
+function resetGame() {
+  leftPaddle.score = 0;
+  rightPaddle.score = 0;
+  ball.reset();
+  loop(); // Resume the game loop
+}
+
+
+class Ball {
+  constructor() {
+    this.x = width / 2;
+    this.y = height / 2;
+    this.size = 20;
+    this.xSpeed = 5; // Initial speed in the X direction
+    this.ySpeed = 3; // Initial speed in the Y direction
+    this.speedIncrement = 1.25; // MODIFICATION: Increment factor by which the speed increases
+  }
+
+  update() {
+    this.x += this.xSpeed;
+    this.y += this.ySpeed;
+
+    if (this.y < 0 || this.y > height) {
+      this.ySpeed *= -1;
+    }
+
+    if (this.x < 0) {
+      rightPaddle.score++;
+      this.reset();
+    } else if (this.x > width) {
+      leftPaddle.score++;
+      this.reset();
+    }
+  }
+
+  reset() {
+    this.x = width / 2;
+    this.y = height / 2;
+    this.xSpeed *= -1;
+  }
+
+  display() {
+    fill(255);
+    noStroke();
+    ellipse(this.x, this.y, this.size, this.size);
+  }
+  
+  checkPaddleLeft(paddle) {
+    if (this.y - this.size / 2 < paddle.y + paddle.h / 2 &&
+      this.y + this.size / 2 > paddle.y - paddle.h / 2 &&
+      this.x - this.size / 2 < paddle.x + paddle.w / 2) {
+      if (this.x > paddle.x) {
+        let diff = this.y - (paddle.y - paddle.h / 2);
+        let rad = radians(45);
+        let angle = map(diff, 0, paddle.h, -rad, rad);
+        this.xSpeed = 10 * cos(angle);
+        this.ySpeed = 10 * sin(angle);
+        this.x = paddle.x + paddle.w / 2 + this.size / 2;
+
+        // MODIFICATION: Increase speed when the ball hits the paddle
+        this.xSpeed *= this.speedIncrement;
+        this.ySpeed *= this.speedIncrement;
+      }
+    }
+  }
+
+  checkPaddleRight(paddle) {
+    if (this.y - this.size / 2 < paddle.y + paddle.h / 2 &&
+      this.y + this.size / 2 > paddle.y - paddle.h / 2 &&
+      this.x + this.size / 2 > paddle.x - paddle.w / 2) {
+      if (this.x < paddle.x) {
+        let diff = this.y - (paddle.y - paddle.h / 2);
+        let angle = map(diff, 0, paddle.h, radians(225), radians(135));
+        this.xSpeed = 10 * cos(angle);
+        this.ySpeed = 10 * sin(angle);
+        this.x = paddle.x - paddle.w / 2 - this.size / 2;
+
+        // MODIFICATION: Increase speed when the ball hits the paddle
+        this.xSpeed *= this.speedIncrement;
+        this.ySpeed *= this.speedIncrement;
+      }
+    }
+  }
+  
+    reset() {
+    this.x = width / 2;
+    this.y = height / 2;
+    this.xSpeed = 5 * (random() > 0.5 ? 1 : -1); // MODIFICATION: Reset speed and randomize direction
+    this.ySpeed = 3 * (random() > 0.5 ? 1 : -1); // MODIFICATION: Reset speed and randomize direction
+  }
+  
+}
+
+class Paddle {
+  constructor(isLeft) {
+    this.y = height / 2;
+    this.w = 20;
+    this.h = 160;
+    this.ychange = 0;
+    this.score = 0;
+
+    if (isLeft) {
+      this.x = this.w;
+    } else {
+      this.x = width - this.w;
+    }
+  }
+
+  move(steps) {
+    this.ychange = steps * 5; // This changes the paddle's vertical position
+  }
+
+  update() {
+    this.y += this.ychange;
+    this.y = constrain(this.y, this.h / 2, height - this.h / 2);
+
+    // This line ensures that when you aren't pressing anything, the paddle doesn't move.
+    this.ychange = 0; // Add this line to stop the paddle from continuing to move after releasing the key
+  }
+
+
+  move(steps) {
+    this.ychange = steps * 9;
+  }
+
+  display() {
+    fill(255);
+    noStroke();
+    rectMode(CENTER);
+    rect(this.x, this.y, this.w, this.h);
+  }
+}
+
+function mousePressed() {
+  if (mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
+    let fs = fullscreen();
+    fullscreen(!fs);
+  }
+}
